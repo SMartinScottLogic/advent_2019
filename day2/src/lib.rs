@@ -1,6 +1,6 @@
 use std::io::{BufRead, BufReader};
 
-use tracing::debug;
+use tracing::{debug, instrument};
 
 pub type ResultType = u64;
 
@@ -29,14 +29,44 @@ impl utils::Solution for Solution {
     }
 
     fn answer_part2(&self, _is_full: bool) -> Self::Result {
+        let answer = self.run_part2().unwrap();
         // Implement for problem
-        Ok(0)
+        Ok(answer)
     }
 }
 
 impl Solution {
     fn add_entry(&mut self, value: u64) {
         self.entries.push(value);
+    }
+
+    #[instrument]
+    fn run_part2(&self) -> Option<u64> {
+        for noun in 0..=99 {
+            for verb in 0..=99 {
+                let output = self.run_part2_pass(noun, verb);
+                debug!(output, noun, verb, "pass");
+                if output == 19690720 {
+                    return Some(100 * noun + verb);
+                }
+            }
+        }
+        None
+    }
+
+    #[instrument(level = "debug")]
+    fn run_part2_pass(&self, noun: u64, verb: u64) -> u64 {
+        let mut ip = 0;
+        let entries = &mut self.entries.clone()[..];
+        entries[1] = noun;
+        entries[2] = verb;
+        loop {
+            if Self::run_command(ip, entries) {
+                break;
+            }
+            ip += 4;
+        }
+        entries[0]
     }
 
     fn run_command(ip: usize, entries: &mut [u64]) -> bool {
