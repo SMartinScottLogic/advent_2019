@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+    #"day1",
+    #"day2",
+    #"day3",
+    #"day4",
+    #"day5",
+    #"day6",
+    #"day7",
+    #"day8",
+    #"day9",
+    #"day10",
+    #"day11",
+    #"day12",
+    #"day13",
+    #"day14",
+    #"day15",
+    #"day16",
+    #"day17",
+    #"day18",
+    #"day19",
+    #"day20",
+    #"day21",
+    #"day22",
+    #"day23",
+    #"day24",
+    #"day25",
+    "utils",
+    "template"
+]
+
+[workspace.dependencies]
+# Flexible concrete Error type built on std::error::Error
+anyhow = "1.0.66"
+# A dead simple ANSI terminal color painting library.
+yansi = "1.0.0-gamma"
+itertools = "0.11.0"
+# An implementation of regular expressions for Rust. This implementation uses finite automata …
+regex = "1.7.0"
+# Pathfinding, flow, and graph algorithms
+pathfinding = "4.1.1"
+
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-test = "0.2"
