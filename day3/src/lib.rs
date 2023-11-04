@@ -1,4 +1,8 @@
-use std::{io::{BufRead, BufReader}, convert::Infallible, collections::{HashMap, HashSet}, cmp::{max, min}, iter};
+use std::{
+    cmp::{max, min},
+    collections::{HashMap, HashSet},
+    io::{BufRead, BufReader},
+};
 
 use tracing::debug;
 
@@ -25,7 +29,12 @@ impl utils::Solution for Solution {
                 }
             }
         }
-        let min_distance = crosses.iter().map(|(x, y)| x.abs()+y.abs()).filter(|d| *d!=0).min().unwrap();
+        let min_distance = crosses
+            .iter()
+            .map(|(x, y)| x.abs() + y.abs())
+            .filter(|d| *d != 0)
+            .min()
+            .unwrap();
         debug!(min_distance, crosses = debug(&crosses), "cross");
         // Implement for problem
         Ok(min_distance.try_into().unwrap())
@@ -44,22 +53,20 @@ impl utils::Solution for Solution {
                 entry.push(*s.iter().min().unwrap());
             }
         }
-        let crosses = occupation.iter()
-        .filter(|(_pos, e)| e.len() > 1)
-        .map(|(pos, e)| {
-            let mut total = 0;
-            for d in e {
-                total += d;
-            }
-            (pos, e, total)
-        })
-        .collect::<Vec<_>>();
+        let crosses = occupation
+            .iter()
+            .filter(|(_pos, e)| e.len() > 1)
+            .map(|(pos, e)| {
+                let mut total = 0;
+                for d in e {
+                    total += d;
+                }
+                (pos, e, total)
+            })
+            .collect::<Vec<_>>();
         debug!(crosses = debug(&crosses), "crosses");
 
-        let answer = crosses.iter().map(|(_pos, _e, total)| {
-            total
-        })
-        .min().unwrap();
+        let answer = crosses.iter().map(|(_pos, _e, total)| total).min().unwrap();
         // Implement for problem
         Ok((*answer).try_into().unwrap())
     }
@@ -82,18 +89,18 @@ impl Solution {
                 Step::Right(d) => (*d, 0_isize),
             };
             if sx != 0 {
-            for dx in min(0, sx)..=max(0, sx) {
-                occupation.insert((x + dx, y));
-            }
+                for dx in min(0, sx)..=max(0, sx) {
+                    occupation.insert((x + dx, y));
+                }
             }
             if sy != 0 {
-            for dy in min(0, sy)..=max(0, sy) {
-                occupation.insert((x, y + dy));
-            }
+                for dy in min(0, sy)..=max(0, sy) {
+                    occupation.insert((x, y + dy));
+                }
             }
             x += sx;
             y += sy;
-        }    
+        }
         debug!(occupation = debug(&occupation), "occ");
         occupation
     }
@@ -109,19 +116,19 @@ impl Solution {
                 Step::Left(d) => (*d, 0, -1, 0),
                 Step::Right(d) => (*d, 0, 1, 0),
             };
-            if dx!=0 {
-                for ex in 1..=sx {
+            if dx != 0 {
+                for _ in 1..=sx {
                     x += dx;
                     occupation.push((x, y));
                 }
             }
-            if dy!=0 {
-                for ey in 1..=sy {
+            if dy != 0 {
+                for _ in 1..=sy {
                     y += dy;
                     occupation.push((x, y));
                 }
             }
-        }    
+        }
         debug!(occupation = debug(&occupation), "occ");
         occupation
     }
@@ -133,9 +140,7 @@ impl<T: std::io::Read> TryFrom<BufReader<T>> for Solution {
     fn try_from(reader: BufReader<T>) -> Result<Self, Self::Error> {
         let mut solution = Self::default();
         for line in reader.lines().flatten() {
-            let wire = line.split(',')
-            .map(|s| s.into())
-            .collect();
+            let wire = line.split(',').map(|s| s.into()).collect();
             solution.add_wire(wire);
         }
         Ok(solution)
@@ -158,7 +163,7 @@ impl From<&str> for Step {
             'D' => Self::Down(*distance),
             'L' => Self::Left(*distance),
             'R' => Self::Right(*distance),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
