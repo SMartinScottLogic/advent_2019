@@ -1,4 +1,7 @@
-use std::{io::{BufRead, BufReader}, collections::{HashMap, HashSet}};
+use std::{
+    collections::{HashMap, HashSet},
+    io::{BufRead, BufReader},
+};
 
 use tracing::debug;
 
@@ -22,8 +25,37 @@ impl utils::Solution for Solution {
     }
 
     fn answer_part2(&self, _is_full: bool) -> Self::Result {
+        let root = self.find_root();
+        let santa_parents = self.all_parents(&root, "SAN");
+        let santa_parents = santa_parents
+            .iter()
+            .fold(HashMap::new(), |mut acc, (k, v)| {
+                acc.insert(k, v);
+                acc
+            });
+        let you_parents = self.all_parents(&root, "YOU");
+        let you_parents = you_parents.iter().fold(HashMap::new(), |mut acc, (k, v)| {
+            acc.insert(k, v);
+            acc
+        });
+        debug!(
+            santa = debug(&santa_parents),
+            you = debug(&you_parents),
+            "both"
+        );
+
+        let mut joint = HashMap::new();
+        for (p, d) in santa_parents {
+            if let Some(d2) = you_parents.get(p) {
+                joint.insert(p, d + *d2);
+            }
+        }
+        debug!(joint = debug(&joint), "joint");
+
+        let (_, d) = joint.iter().min_by_key(|(_, d)| *d).unwrap();
+
         // Implement for problem
-        Ok(0)
+        Ok(*d as ResultType)
     }
 }
 
@@ -34,11 +66,17 @@ impl Solution {
     }
 
     fn find_root(&self) -> String {
-        let children = self.direct_orbits.values().flat_map(|v| v.iter()).collect::<HashSet<_>>();
+        let children = self
+            .direct_orbits
+            .values()
+            .flat_map(|v| v.iter())
+            .collect::<HashSet<_>>();
         let parents = self.direct_orbits.keys().collect::<HashSet<_>>();
 
-        let root = parents.difference(&children).map(|v| v.to_owned()).collect::<HashSet<_>>();
-        debug!(children = debug(&children), parents = debug(&children), root = debug(&root), "t");
+        let root = parents
+            .difference(&children)
+            .map(|v| v.to_owned())
+            .collect::<HashSet<_>>();
         assert_eq!(1, root.len());
         root.iter().next().unwrap().to_owned().to_owned()
     }
@@ -56,10 +94,32 @@ impl Solution {
                     count += 1;
                     num_children += 1 + all_children;
                 }
-                if start == "E" {
-                    debug!(start, count, "probe");
-                }
                 (count, num_children)
+            }
+        }
+    }
+
+    fn all_parents(&self, start: &str, probe: &str) -> Vec<(String, usize)> {
+        match self.direct_orbits.get(start) {
+            None => vec![],
+            Some(children) => {
+                if children.contains(probe) {
+                    vec![(start.to_string(), 0)]
+                } else {
+                    let mut distances = Vec::new();
+                    for child in children {
+                        let mut child_distances = self.all_parents(child, probe);
+                        if !child_distances.is_empty() {
+                            debug!(start, child_distances = debug(&child_distances), "p");
+                            distances.push((
+                                start.to_string(),
+                                1 + child_distances.iter().map(|(_, d)| d).max().unwrap(),
+                            ));
+                            distances.append(&mut child_distances);
+                        }
+                    }
+                    distances
+                }
             }
         }
     }
