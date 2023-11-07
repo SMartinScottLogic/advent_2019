@@ -158,7 +158,7 @@ enum Step {
 impl From<&str> for Step {
     fn from(value: &str) -> Self {
         let distance = &value[1..].parse().unwrap();
-        match value.chars().nth(0).unwrap() {
+        match value.chars().next().unwrap() {
             'U' => Self::Up(*distance),
             'D' => Self::Down(*distance),
             'L' => Self::Left(*distance),
