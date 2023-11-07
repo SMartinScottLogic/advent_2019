@@ -144,10 +144,16 @@ impl Cpu {
 
     fn set_value(&mut self, offset: usize, parameter_modes: &[ParameterMode], value: i64) {
         use ParameterMode::*;
+        debug!(cpu=debug(&self), offset, parameter_modes = debug(parameter_modes), value, "set_value");
         let address = match parameter_modes.get(offset - 1).unwrap_or(&Position) {
             Position => self.mem[self.ip + offset],
+            Relative => self.mem[self.ip + offset] + self.relative_base, 
             mode => panic!("Unknown parameter mode {mode:?}")
-        } as usize;
+        };
+        if address < 0 {
+            panic!("Cannot access negative addresses: {address}");
+        }
+        let address = address as usize;
         if self.mem.len() <= address {
             self.mem.resize(address + 1, 0);
         }
