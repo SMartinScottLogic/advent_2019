@@ -15,20 +15,34 @@ impl utils::Solution for Solution {
     type Result = anyhow::Result<ResultType>;
     fn analyse(&mut self, _is_full: bool) {}
 
-    fn answer_part1(&self, _is_full: bool) -> Self::Result {
+    fn answer_part1(&self, is_full: bool) -> Self::Result {
         let mut cpu = intcode::Cpu::new(0, &self.entries);
         cpu.input(1);
         while !cpu.has_halted() {
             cpu.execute();
         }
-        debug!(cpu = debug(cpu), "t");
+        debug!(cpu = debug(&cpu), "inspect");
+        let outputs = cpu.take_output();
+        if is_full {
+            assert_eq!(1, outputs.len());
+        }
         // Implement for problem
-        Ok(0)
+        Ok(*outputs.first().unwrap())
     }
 
-    fn answer_part2(&self, _is_full: bool) -> Self::Result {
+    fn answer_part2(&self, is_full: bool) -> Self::Result {
+        let mut cpu = intcode::Cpu::new(0, &self.entries);
+        cpu.input(2);
+        while !cpu.has_halted() {
+            cpu.execute();
+        }
+        debug!(cpu = debug(&cpu), "inspect");
+        let outputs = cpu.take_output();
+        if is_full {
+            assert_eq!(1, outputs.len());
+        }
         // Implement for problem
-        Ok(0)
+        Ok(*outputs.first().unwrap())
     }
 }
 
