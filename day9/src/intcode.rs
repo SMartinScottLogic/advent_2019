@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use tracing::{debug, trace};
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct Cpu {
@@ -25,7 +25,7 @@ impl From<char> for ParameterMode {
             '0' => Self::Position,
             '1' => Self::Immediate,
             '2' => Self::Relative,
-            _ => panic!("Unknown parameter mode id {value}")
+            _ => panic!("Unknown parameter mode id {value}"),
         }
     }
 }
@@ -71,7 +71,11 @@ impl Cpu {
             .collect::<String>()
             .parse::<i64>()
             .unwrap();
-        let parameter_modes = s.iter().skip(2).map(|v| ParameterMode::from(*v)).collect::<Vec<_>>();
+        let parameter_modes = s
+            .iter()
+            .skip(2)
+            .map(|v| ParameterMode::from(*v))
+            .collect::<Vec<_>>();
         debug!(opcode, parameter_mode = debug(&parameter_modes), "t2");
         match opcode {
             99 => {
@@ -129,26 +133,31 @@ impl Cpu {
                     panic!("Attempt to access negative memory: {value}");
                 }
                 *self.mem.get(value as usize).unwrap_or(&0)
-            },
-            Immediate => {self.mem[self.ip + offset]},
+            }
+            Immediate => self.mem[self.ip + offset],
             Relative => {
                 let address = self.mem[self.ip + offset] + self.relative_base;
                 if address < 0 {
                     panic!("Attempt to access negative memory: {address}");
                 }
                 *self.mem.get(address as usize).unwrap_or(&0)
-            },
-            mode => panic!("Unknown parameter mode {mode:?}")
+            }
         }
     }
 
     fn set_value(&mut self, offset: usize, parameter_modes: &[ParameterMode], value: i64) {
         use ParameterMode::*;
-        debug!(cpu=debug(&self), offset, parameter_modes = debug(parameter_modes), value, "set_value");
+        debug!(
+            cpu = debug(&self),
+            offset,
+            parameter_modes = debug(parameter_modes),
+            value,
+            "set_value"
+        );
         let address = match parameter_modes.get(offset - 1).unwrap_or(&Position) {
             Position => self.mem[self.ip + offset],
-            Relative => self.mem[self.ip + offset] + self.relative_base, 
-            mode => panic!("Unknown parameter mode {mode:?}")
+            Relative => self.mem[self.ip + offset] + self.relative_base,
+            mode => panic!("Unknown parameter mode {mode:?}"),
         };
         if address < 0 {
             panic!("Cannot access negative addresses: {address}");
