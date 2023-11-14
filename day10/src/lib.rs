@@ -1,6 +1,6 @@
 use std::{
     cmp::max,
-    fmt::Debug,
+    fmt::{Debug, Display},
     io::{BufRead, BufReader},
 };
 
@@ -11,7 +11,7 @@ pub type ResultType = i64;
 
 #[derive(Default)]
 pub struct Solution {
-    asteroids: Matrix,
+    asteroids: Matrix<i64>,
 }
 impl Debug for Solution {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -53,13 +53,27 @@ impl utils::Solution for Solution {
     }
 }
 
+#[derive(Default, Debug, Clone)]
+enum Status {
+    #[default]
+    Unknown,
+    Visible,
+    Covered,
+    Root,
+}
+impl Display for Status {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+
 impl Solution {
     fn add_asteroid(&mut self, x: usize, y: usize) {
         self.asteroids
             .set(x.try_into().unwrap(), y.try_into().unwrap(), 1);
     }
 
-    fn count_visible(&self, x: isize, y: isize) -> i64 {
+    fn compute_visible(&self, x: isize, y: isize) -> Matrix<Status> {
         let (max_x, max_y) = self.asteroids.dimensions();
         let max_delta = max(max(x, max_x - x), max(y, max_y - y));
         debug!(x, y, max_x, max_y, max_delta, "delta");
@@ -81,14 +95,29 @@ impl Solution {
                     if let Some(1) = self.asteroids.get(px, py) {
                         if status.get(px, py).is_none() {
                             debug!(x, y, px, py, delta, max_delta, max_x, max_y, "sight");
-                            status.set(px, py, 1);
-                            self.mark_unseeable(x, y, max_x, max_y, dx, dy, &mut status, 0);
+                            status.set(px, py, Status::Visible);
+                            self.mark_unseeable(
+                                x,
+                                y,
+                                max_x,
+                                max_y,
+                                dx,
+                                dy,
+                                &mut status,
+                                Status::Covered,
+                            );
                         }
                     }
                 }
             }
         }
-        status.set(x, y, 0);
+        status.set(x, y, Status::Root);
+        status
+    }
+
+    fn count_visible(&self, x: isize, y: isize) -> i64 {
+        let (max_x, max_y) = self.asteroids.dimensions();
+        let status = self.compute_visible(x, y);
         //status.display();
 
         let mut count = 0;
@@ -96,7 +125,10 @@ impl Solution {
             for x in 0..=max_x {
                 count += match status.get(x, y) {
                     None => 0,
-                    Some(v) => *v,
+                    Some(Status::Visible) => 1,
+                    Some(Status::Root) => 0,
+                    Some(Status::Covered) => 0,
+                    Some(v) => panic!("unexpected status {v}"),
                 }
             }
         }
@@ -111,8 +143,8 @@ impl Solution {
         max_y: isize,
         dx: isize,
         dy: isize,
-        status: &mut Matrix,
-        value: i64,
+        status: &mut Matrix<Status>,
+        value: Status,
     ) {
         let gcd = greatest_common_divisor(dx.abs(), dy.abs());
         let step_x = dx / gcd;
@@ -130,7 +162,7 @@ impl Solution {
             }
             if let Some(1) = self.asteroids.get(px, py) {
                 if status.get(px, py).is_none() {
-                    status.set(px, py, value);
+                    status.set(px, py, value.clone());
                 }
             }
             debug!(x, y, max_x, max_y, px, py, gcd, "probe");
