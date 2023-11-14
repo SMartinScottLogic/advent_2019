@@ -1,17 +1,21 @@
 use std::cmp::{max, min};
 use std::collections::HashMap;
+use std::fmt::Display;
 
 #[derive(Debug, Default)]
-pub struct Matrix {
-    data: HashMap<(isize, isize), i64>,
+pub struct Matrix<T> {
+    data: HashMap<(isize, isize), T>,
     max_x: isize,
     max_y: isize,
     min_x: isize,
     min_y: isize,
 }
 
-impl Matrix {
-    pub fn new() -> Matrix {
+impl<T> Matrix<T>
+where
+    T: Default + Display + Clone,
+{
+    pub fn new() -> Matrix<T> {
         Matrix {
             ..Default::default()
         }
@@ -25,12 +29,12 @@ impl Matrix {
         self.data.len()
     }
 
-    pub fn get(&self, x: isize, y: isize) -> Option<&i64> {
+    pub fn get(&self, x: isize, y: isize) -> Option<&T> {
         self.data.get(&(x, y))
     }
 
-    pub fn set(&mut self, x: isize, y: isize, value: i64) {
-        *self.data.entry((x, y)).or_insert(0) = value;
+    pub fn set(&mut self, x: isize, y: isize, value: T) {
+        *self.data.entry((x, y)).or_default() = value;
         self.max_x = max(self.max_x, x);
         self.max_y = max(self.max_y, y);
         self.min_x = min(self.min_x, x);
@@ -57,14 +61,17 @@ impl Matrix {
     }
     pub fn display_with_mapping<F>(&self, mapping: F)
     where
-        F: Fn(i64) -> String,
+        F: Fn(T) -> String,
     {
         for y in self.min_y..=self.max_y {
             let mut line = String::new();
             line.push_str(&format!("{} ", y));
             for x in self.min_x..=self.max_x {
-                let v = self.get(x, y).unwrap_or(&0);
-                let v = mapping(*v);
+                let v = match self.get(x, y) {
+                    Some(v) => (*v).to_owned(),
+                    None => T::default(),
+                };
+                let v = mapping(v);
                 line.push_str(&v);
             }
             println!("{line}");
