@@ -24,7 +24,7 @@ impl utils::Solution for Solution {
             //.take(310)
             .map(|(id, v)| (id, id / (25 * 6), v))
             .fold(HashMap::new(), |mut acc, (_pixel_id, pane, value)| {
-                let entry = acc.entry(pane).or_insert_with(HashMap::new);
+                let entry: &mut HashMap<char, u64> = acc.entry(pane).or_default();
                 *entry.entry(value).or_insert(0) += 1;
                 acc
             });
