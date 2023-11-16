@@ -2,7 +2,7 @@ use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fmt::Display;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Matrix<T> {
     data: HashMap<(isize, isize), T>,
     max_x: isize,
@@ -76,6 +76,10 @@ where
             }
             println!("{line}");
         }
+    }
+
+    pub fn sparse_iter(&self) -> std::collections::hash_map::Iter<(isize, isize), T> {
+        self.data.iter()
     }
 }
 

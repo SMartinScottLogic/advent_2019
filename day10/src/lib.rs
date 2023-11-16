@@ -1,9 +1,9 @@
 use std::{
     cmp::max,
+    f64::consts::PI,
     fmt::{Debug, Display},
     io::{BufRead, BufReader},
 };
-
 use tracing::{debug, info};
 use utils::Matrix;
 
@@ -48,8 +48,56 @@ impl utils::Solution for Solution {
     }
 
     fn answer_part2(&self, _is_full: bool) -> Self::Result {
-        // Implement for problem
-        Ok(0)
+        let (maxx, maxy) = self.asteroids.dimensions();
+        let mut max_count = 0;
+        let mut best_x = 0;
+        let mut best_y = 0;
+        for y in 0..=maxy {
+            for x in 0..=maxx {
+                if let Some(1) = self.asteroids.get(x, y) {
+                    let count = self.count_visible(x, y);
+                    if count > max_count {
+                        max_count = count;
+                        best_x = x;
+                        best_y = y;
+                    }
+                    //break 'end;
+                }
+            }
+        }
+        info!("new base: ({},{})", best_x, best_y);
+
+        let mut destroyed = Vec::new();
+        let mut asteroids = self.asteroids.clone();
+        loop {
+            let visibility = Self::compute_visible(&asteroids, best_x, best_y);
+            let mut v = visibility
+                .sparse_iter()
+                .filter_map(|((x, y), status)| match status {
+                    Status::Visible => Some((x, y)),
+                    _ => None,
+                })
+                .map(|(x, y)| {
+                    let dx = *x as f64 - best_x as f64;
+                    let dy = *y as f64 - best_y as f64;
+                    // TODO compute angle arccos( (a.b)/(|a||b|))
+                    let angle_y_axis = angle_y(dx, dy);
+                    (angle_y_axis, x, y, dx, dy)
+                })
+                .collect::<Vec<_>>();
+            v.sort_by(|(angle_a, ..), (angle_b, ..)| angle_a.partial_cmp(angle_b).unwrap());
+            if v.is_empty() {
+                break;
+            }
+            debug!(len = v.len(), v = debug(&v), "angles");
+            for (_, x, y, ..) in v {
+                destroyed.push((*x, *y));
+                asteroids.set(*x, *y, 0);
+            }
+        }
+        let (a_x, a_y) = destroyed.get(199).unwrap();
+        debug!(destroyed = debug(&destroyed), a_x, a_y, "destroyed order");
+        Ok((a_x * a_x + a_y * a_y).try_into().unwrap())
     }
 }
 
@@ -73,8 +121,8 @@ impl Solution {
             .set(x.try_into().unwrap(), y.try_into().unwrap(), 1);
     }
 
-    fn compute_visible(&self, x: isize, y: isize) -> Matrix<Status> {
-        let (max_x, max_y) = self.asteroids.dimensions();
+    fn compute_visible(asteroids: &Matrix<i64>, x: isize, y: isize) -> Matrix<Status> {
+        let (max_x, max_y) = asteroids.dimensions();
         let max_delta = max(max(x, max_x - x), max(y, max_y - y));
         debug!(x, y, max_x, max_y, max_delta, "delta");
         let mut status = Matrix::new();
@@ -92,11 +140,12 @@ impl Solution {
                     if py < 0 || py > max_y {
                         continue;
                     }
-                    if let Some(1) = self.asteroids.get(px, py) {
+                    if let Some(1) = asteroids.get(px, py) {
                         if status.get(px, py).is_none() {
                             debug!(x, y, px, py, delta, max_delta, max_x, max_y, "sight");
                             status.set(px, py, Status::Visible);
-                            self.mark_unseeable(
+                            Self::mark_unseeable(
+                                asteroids,
                                 x,
                                 y,
                                 max_x,
@@ -117,7 +166,7 @@ impl Solution {
 
     fn count_visible(&self, x: isize, y: isize) -> i64 {
         let (max_x, max_y) = self.asteroids.dimensions();
-        let status = self.compute_visible(x, y);
+        let status = Self::compute_visible(&self.asteroids, x, y);
         //status.display();
 
         let mut count = 0;
@@ -136,7 +185,7 @@ impl Solution {
     }
 
     fn mark_unseeable(
-        &self,
+        asteroids: &Matrix<i64>,
         x: isize,
         y: isize,
         max_x: isize,
@@ -160,7 +209,7 @@ impl Solution {
             if py < 0 || py > max_y {
                 break;
             }
-            if let Some(1) = self.asteroids.get(px, py) {
+            if let Some(1) = asteroids.get(px, py) {
                 if status.get(px, py).is_none() {
                     status.set(px, py, value.clone());
                 }
@@ -193,5 +242,65 @@ impl<T: std::io::Read> TryFrom<BufReader<T>> for Solution {
             // Implement for problem
         }
         Ok(solution)
+    }
+}
+
+fn angle_y(x: f64, y: f64) -> f64 {
+    let mut angle_y_axis = (y / (x * x + y * y).sqrt()).acos();
+    if x < 0.0 {
+        // q4
+        angle_y_axis = 2.0 * PI - angle_y_axis;
+    }
+    angle_y_axis
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    fn assert_close(a: f64, b: f64) {
+        println!("{a} ~ {b}");
+        assert!((a - b).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_angle_1() {
+        let r = angle_y(0.0, 1.0);
+        assert_close(r, 0.0);
+    }
+    #[test]
+    fn test_angle_2() {
+        let r = angle_y(1.0, 1.0);
+        assert_close(r, PI / 4.0);
+    }
+    #[test]
+    fn test_angle_3() {
+        let r = angle_y(1.0, 0.0);
+        assert_close(r, PI / 2.0);
+    }
+    #[test]
+    fn test_angle_4() {
+        let r = angle_y(1.0, -1.0);
+        assert_close(r, PI * 3.0 / 4.0);
+    }
+    #[test]
+    fn test_angle_5() {
+        let r = angle_y(0.0, -1.0);
+        assert_close(r, PI);
+    }
+    #[test]
+    fn test_angle_6() {
+        let r = angle_y(-1.0, -1.0);
+        assert_close(r, PI + PI / 4.0);
+    }
+    #[test]
+    fn test_angle_7() {
+        let r = angle_y(-1.0, 0.0);
+        assert_close(r, PI + PI / 2.0);
+    }
+    #[test]
+    fn test_angle_8() {
+        let r = angle_y(-1.0, 1.0);
+        assert_close(r, PI + PI * 3.0 / 4.0);
     }
 }
