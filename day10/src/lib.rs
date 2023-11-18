@@ -73,15 +73,19 @@ impl utils::Solution for Solution {
             let visibility = Self::compute_visible(&asteroids, best_x, best_y);
             let mut v = visibility
                 .sparse_iter()
-                .filter_map(|((x, y), status)| match status {
+                .filter_map(|((x, y), status)| {
+                    debug!(x, y, status = debug(status), "probe1");
+                    match status {
+                    
                     Status::Visible => Some((x, y)),
                     _ => None,
-                })
+                }})
                 .map(|(x, y)| {
                     let dx = *x as f64 - best_x as f64;
                     let dy = *y as f64 - best_y as f64;
                     // TODO compute angle arccos( (a.b)/(|a||b|))
                     let angle_y_axis = angle_y(dx, dy);
+                    debug!(x, y, dx, dy, angle_y_axis, "probe2");
                     (angle_y_axis, x, y, dx, dy)
                 })
                 .collect::<Vec<_>>();
@@ -90,14 +94,18 @@ impl utils::Solution for Solution {
                 break;
             }
             debug!(len = v.len(), v = debug(&v), "angles");
-            for (_, x, y, ..) in v {
-                destroyed.push((*x, *y));
+            for (a, x, y, ..) in v {
+                debug!(x, y, "probe3");
+                destroyed.push((*x, *y, a));
                 asteroids.set(*x, *y, 0);
             }
         }
-        let (a_x, a_y) = destroyed.get(199).unwrap();
-        debug!(destroyed = debug(&destroyed), a_x, a_y, "destroyed order");
-        Ok((a_x * a_x + a_y * a_y).try_into().unwrap())
+        destroyed.iter().enumerate().for_each(|(id, (x, y, a))| {
+            info!(x, y, dx = x - best_x, dy = y - best_y, a, id, "all");
+        });
+        let (a_x, a_y, ..) = destroyed.get(199).unwrap();
+        info!(destroyed = debug(&destroyed), a_x, a_y, "destroyed order");
+        Ok((100 * a_x + a_y).try_into().unwrap())
     }
 }
 
@@ -250,6 +258,8 @@ fn angle_y(x: f64, y: f64) -> f64 {
     if x < 0.0 {
         // q4
         angle_y_axis = 2.0 * PI - angle_y_axis;
+    } else {
+        angle_y_axis = PI - angle_y_axis;
     }
     angle_y_axis
 }
@@ -266,12 +276,12 @@ mod tests {
     #[test]
     fn test_angle_1() {
         let r = angle_y(0.0, 1.0);
-        assert_close(r, 0.0);
+        assert_close(r, PI);
     }
     #[test]
     fn test_angle_2() {
         let r = angle_y(1.0, 1.0);
-        assert_close(r, PI / 4.0);
+        assert_close(r, PI * 3.0 / 4.0);
     }
     #[test]
     fn test_angle_3() {
@@ -281,12 +291,12 @@ mod tests {
     #[test]
     fn test_angle_4() {
         let r = angle_y(1.0, -1.0);
-        assert_close(r, PI * 3.0 / 4.0);
+        assert_close(r, PI / 4.0);
     }
     #[test]
     fn test_angle_5() {
         let r = angle_y(0.0, -1.0);
-        assert_close(r, PI);
+        assert_close(r, 0.0);
     }
     #[test]
     fn test_angle_6() {
