@@ -1,10 +1,10 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     fmt::Display,
     io::{BufRead, BufReader},
 };
 
-use tracing::{debug, info};
+use tracing::debug;
 use utils::Point;
 
 mod intcode;
@@ -80,13 +80,85 @@ impl utils::Solution for Solution {
             .iter()
             .map(|p| (p, known.get(p).cloned().unwrap_or_default()))
             .collect::<Vec<_>>();
-        info!(path = debug(&path), "optimal path?");
+        debug!(path = debug(&path), "optimal path?");
         Ok(path.len().try_into().unwrap())
     }
 
     fn answer_part2(&self, _is_full: bool) -> Self::Result {
-        // Implement for problem
-        Ok(0)
+        let mut cpu = intcode::Cpu::new(0, &self.entries);
+        let mut current_direction = Direction::North;
+        let mut position = Point::new(0, 0);
+        let mut known = HashMap::new();
+        known.insert(position, Block::Gap);
+        'driver: loop {
+            cpu.execute();
+            if !cpu.output().is_empty() {
+                for output in cpu.take_output() {
+                    let probe_position = match current_direction {
+                        Direction::North => position + Point::N,
+                        Direction::South => position + Point::S,
+                        Direction::East => position + Point::E,
+                        Direction::West => position + Point::W,
+                    };
+                    let block = Block::from_intcode(output);
+                    known.insert(probe_position, block.clone());
+                    match block {
+                        Block::Gap | Block::Oxygen => position = probe_position,
+                        Block::Wall => {}
+                        Block::None => unreachable!(),
+                    };
+                    debug!(
+                        output,
+                        direction = debug(&current_direction),
+                        position = debug(position),
+                        "progress"
+                    );
+                }
+            }
+            if cpu.needs_input() {
+                if let Some(path) =
+                    self.calculate_path(position, &known, |_, block| *block == Block::None)
+                {
+                    debug!(
+                        path = debug(&path),
+                        position = debug(position),
+                        "computed path"
+                    );
+                    current_direction = Self::calculate_direction(&position, path.front().unwrap());
+                    cpu.input(current_direction.to_intcode());
+                } else {
+                    // finished, I hope
+                    break 'driver;
+                }
+            }
+            if cpu.has_halted() {
+                panic!();
+            }
+        }
+
+        let (oxygen_pos, _) = known.iter().find(|(_, b)| *b == &Block::Oxygen).unwrap();
+
+        let mut depth = 0;
+        let mut current_depth = VecDeque::new();
+        current_depth.push_back(oxygen_pos.to_owned());
+        let mut seen = HashSet::new();
+        seen.insert(oxygen_pos.to_owned());
+
+        while !current_depth.is_empty() {
+            let mut next_depth = VecDeque::new();
+            while let Some(p) = current_depth.pop_front() {
+                for neighbour in p.cardinal() {
+                    if known.get(&neighbour) == Some(&Block::Gap) && !seen.contains(&neighbour) {
+                        seen.insert(neighbour);
+                        next_depth.push_back(neighbour);
+                    }
+                }
+            }
+            depth += 1;
+            current_depth = next_depth;
+        }
+
+        Ok(depth - 1)
     }
 }
 
