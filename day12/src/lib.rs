@@ -1,7 +1,7 @@
 use std::io::{BufRead, BufReader};
 
 use itertools::Itertools;
-use tracing::{debug, info};
+use tracing::debug;
 
 pub type ResultType = f64;
 
