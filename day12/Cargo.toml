@@ -1,0 +1,12 @@
+[package]
+name = "day12"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tracing = {workspace = true}
+anyhow = {workspace = true}
+itertools = {workspace = true}
+
+[dependencies.utils]
+path = "../utils"
