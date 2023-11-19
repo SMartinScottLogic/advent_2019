@@ -27,7 +27,8 @@ members = [
     #"day24",
     #"day25",
     "utils",
-    "template"
+    "template",
+    "xtask"
 ]
 
 [workspace.dependencies]
