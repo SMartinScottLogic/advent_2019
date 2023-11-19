@@ -12,7 +12,7 @@ members = [
     "day9",
     "day10",
     "day11",
-    #"day12",
+    "day12",
     #"day13",
     #"day14",
     #"day15",
@@ -35,7 +35,7 @@ members = [
 anyhow = "1.0.66"
 # A dead simple ANSI terminal color painting library.
 yansi = "1.0.0-gamma"
-itertools = "0.11.0"
+itertools = "0.12.0"
 # An implementation of regular expressions for Rust. This implementation uses finite automata …
 regex = "1.7.0"
 # Pathfinding, flow, and graph algorithms
