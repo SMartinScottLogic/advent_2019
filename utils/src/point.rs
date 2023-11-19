@@ -1,6 +1,6 @@
-use std::ops::{Add, Sub};
+use std::ops::{Add, AddAssign, Sub};
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Hash)]
 pub struct Point {
     x: i64,
     y: i64,
@@ -43,6 +43,13 @@ impl Point {
             .map(|d| *self + d)
             .collect()
     }
+
+    pub fn x(&self) -> i64 {
+        self.x
+    }
+    pub fn y(&self) -> i64 {
+        self.y
+    }
 }
 
 impl Add<Self> for Point {
@@ -53,6 +60,12 @@ impl Add<Self> for Point {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
         }
+    }
+}
+impl AddAssign<Self> for Point {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
     }
 }
 
