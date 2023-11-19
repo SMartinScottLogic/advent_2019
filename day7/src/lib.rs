@@ -89,7 +89,7 @@ impl Solution {
             .iter()
             .enumerate()
             .map(|(id, phase)| {
-                let mut cpu = intcode::CPU::new(id, &self.entries);
+                let mut cpu = intcode::Cpu::new(id, &self.entries);
                 cpu.input(*phase);
                 cpu
             })
