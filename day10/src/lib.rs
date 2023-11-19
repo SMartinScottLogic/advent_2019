@@ -5,7 +5,7 @@ use std::{
     io::{BufRead, BufReader},
 };
 use tracing::{debug, info};
-use utils::Matrix;
+use utils::{math::greatest_common_divisor, Matrix};
 
 pub type ResultType = i64;
 
@@ -204,7 +204,10 @@ impl Solution {
         status: &mut Matrix<Status>,
         value: Status,
     ) {
-        let gcd = greatest_common_divisor(dx.abs(), dy.abs());
+        let gcd: isize =
+            greatest_common_divisor(dx.abs().try_into().unwrap(), dy.abs().try_into().unwrap())
+                .try_into()
+                .unwrap();
         let step_x = dx / gcd;
         let step_y = dy / gcd;
         let mut px = x + dx;
@@ -225,14 +228,6 @@ impl Solution {
             }
             debug!(x, y, max_x, max_y, px, py, gcd, "probe");
         }
-    }
-}
-
-fn greatest_common_divisor(a: isize, b: isize) -> isize {
-    if b == 0 {
-        a
-    } else {
-        greatest_common_divisor(b, a % b)
     }
 }
 
