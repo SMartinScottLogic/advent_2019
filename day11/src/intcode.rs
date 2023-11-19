@@ -4,6 +4,13 @@ use std::collections::VecDeque;
 use tracing::debug;
 
 #[derive(Debug)]
+pub enum CpuState {
+    Running,
+    Halted,
+    AwaitingInput,
+}
+
+#[derive(Debug)]
 pub struct Cpu {
     id: usize,
     ip: usize,
@@ -11,7 +18,7 @@ pub struct Cpu {
     mem: Vec<i64>,
     inputs: VecDeque<i64>,
     outputs: Vec<i64>,
-    halted: bool,
+    state: CpuState,
 }
 
 #[derive(Debug)]
@@ -40,7 +47,7 @@ impl Cpu {
             mem: mem.to_vec(),
             inputs: VecDeque::new(),
             outputs: Vec::new(),
-            halted: false,
+            state: CpuState::Running,
         }
     }
 
@@ -52,6 +59,10 @@ impl Cpu {
         self.inputs.push_back(value);
     }
 
+    pub fn output(&self) -> &Vec<i64> {
+        &self.outputs
+    }
+
     pub fn take_output(&mut self) -> Vec<i64> {
         let mut outputs = Vec::new();
         outputs.append(&mut self.outputs);
@@ -59,7 +70,11 @@ impl Cpu {
     }
 
     pub fn has_halted(&self) -> bool {
-        self.halted
+        matches!(self.state, CpuState::Halted)
+    }
+
+    pub fn needs_input(&self) -> bool {
+        matches!(self.state, CpuState::AwaitingInput)
     }
 
     pub fn execute(&mut self) -> bool {
@@ -171,7 +186,7 @@ impl Cpu {
     }
 
     fn execute_halt(&mut self) {
-        self.halted = true;
+        self.state = CpuState::Halted;
         debug!(id = self.id, cpu = debug(&self), "halt");
     }
 
@@ -197,9 +212,11 @@ impl Cpu {
 
     fn execute_input(&mut self, parameter_modes: &[ParameterMode]) {
         if self.inputs.is_empty() {
+            self.state = CpuState::AwaitingInput;
             debug!(cpu = self.id, cpu = debug(&self), "no input");
             return;
         }
+        self.state = CpuState::Running;
         let input = self.inputs.pop_front().unwrap();
         self.set_value(1, parameter_modes, input);
         self.ip += 2;
