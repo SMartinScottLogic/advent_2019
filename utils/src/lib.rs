@@ -1,4 +1,5 @@
 mod graph;
+pub mod math;
 mod matrix;
 mod point;
 mod runner;
