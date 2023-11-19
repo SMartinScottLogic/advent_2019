@@ -77,10 +77,10 @@ impl utils::Solution for Solution {
                 .filter_map(|((x, y), status)| {
                     debug!(x, y, status = debug(status), "probe1");
                     match status {
-                    
-                    Status::Visible => Some((x, y)),
-                    _ => None,
-                }})
+                        Status::Visible => Some((x, y)),
+                        _ => None,
+                    }
+                })
                 .map(|(x, y)| {
                     let dx = *x as f64 - best_x as f64;
                     let dy = *y as f64 - best_y as f64;

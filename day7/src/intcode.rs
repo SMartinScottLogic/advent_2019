@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use tracing::{debug, trace};
 
 #[derive(Debug)]
-pub struct CPU {
+pub struct Cpu {
     id: usize,
     ip: usize,
     mem: Vec<i64>,
@@ -12,7 +12,7 @@ pub struct CPU {
     halted: bool,
 }
 
-impl CPU {
+impl Cpu {
     pub fn new(id: usize, mem: &[i64]) -> Self {
         Self {
             id,
@@ -25,7 +25,7 @@ impl CPU {
     }
 }
 
-impl CPU {
+impl Cpu {
     pub fn id(&self) -> usize {
         self.id
     }
