@@ -70,6 +70,7 @@ impl utils::Solution for Solution {
         let mut destroyed = Vec::new();
         let mut asteroids = self.asteroids.clone();
         loop {
+            destroyed.push((-1, -1, -1.0));
             let visibility = Self::compute_visible(&asteroids, best_x, best_y);
             let mut v = visibility
                 .sparse_iter()
@@ -103,7 +104,7 @@ impl utils::Solution for Solution {
         destroyed.iter().enumerate().for_each(|(id, (x, y, a))| {
             info!(x, y, dx = x - best_x, dy = y - best_y, a, id, "all");
         });
-        let (a_x, a_y, ..) = destroyed.get(199).unwrap();
+        let (a_x, a_y, ..) = destroyed.get(199).unwrap_or(&(0, 0, 0.0));
         info!(destroyed = debug(&destroyed), a_x, a_y, "destroyed order");
         Ok((100 * a_x + a_y).try_into().unwrap())
     }
