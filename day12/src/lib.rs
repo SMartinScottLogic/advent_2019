@@ -1,7 +1,7 @@
 use std::io::{BufRead, BufReader};
 
 use itertools::Itertools;
-use tracing::debug;
+use tracing::{debug, info};
 
 pub type ResultType = f64;
 
@@ -25,9 +25,66 @@ impl utils::Solution for Solution {
     }
 
     fn answer_part2(&self, _is_full: bool) -> Self::Result {
+        let mut moons = self.moons.clone();
+        let mut step = 1;
+        let period_x = loop {
+            Self::apply_gravity(&mut moons);
+            Self::apply_velocity(&mut moons);
+            debug!(step, moons = debug(&moons), "after");
+            if moons.iter().map(|moon| moon.velocity.x.abs()).sum::<f64>() == 0.0 {
+                break step;
+            }
+            step += 1;
+        };
+        let mut moons = self.moons.clone();
+        let mut step = 1;
+        let period_y = loop {
+            Self::apply_gravity(&mut moons);
+            Self::apply_velocity(&mut moons);
+            debug!(step, moons = debug(&moons), "after");
+            if moons.iter().map(|moon| moon.velocity.y.abs()).sum::<f64>() == 0.0 {
+                break step;
+            }
+            step += 1;
+        };
+        let mut moons = self.moons.clone();
+        let mut step = 1;
+        let period_z = loop {
+            Self::apply_gravity(&mut moons);
+            Self::apply_velocity(&mut moons);
+            debug!(step, moons = debug(&moons), "after");
+            if moons.iter().map(|moon| moon.velocity.z.abs()).sum::<f64>() == 0.0 {
+                break step;
+            }
+            step += 1;
+        };
+        let lcm = lcm3(period_x * 2, period_y * 2, period_z * 2);
+        info!(period_x, period_y, period_z, lcm, "p2");
         // Implement for problem
-        Ok(0.0)
+        Ok(lcm as f64)
     }
+}
+
+// From https://doc.rust-lang.org/std/ops/trait.Div.html
+// Euclid's two-thousand-year-old algorithm for finding the greatest common
+// divisor.
+fn gcd(x: u64, y: u64) -> u64 {
+    let mut x = x;
+    let mut y = y;
+    while y != 0 {
+        let t = y;
+        y = x % y;
+        x = t;
+    }
+    x
+}
+
+fn lcm(a: u64, b: u64) -> u64 {
+    a * b / gcd(a, b)
+}
+
+fn lcm3(a: u64, b: u64, c: u64) -> u64 {
+    lcm(a, lcm(b, c))
 }
 
 impl Solution {
