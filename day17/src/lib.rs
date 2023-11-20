@@ -1,6 +1,6 @@
 use std::io::{BufRead, BufReader};
 
-use tracing::info;
+use tracing::debug;
 use utils::{Matrix, Point};
 
 mod intcode;
@@ -33,26 +33,44 @@ impl utils::Solution for Solution {
         let mut y = 0;
         for c in output {
             match c {
-                35 => {image.set(x, y, 1); x += 1;},
-                46 => {image.set(x, y, 0); x += 1;},
-                10 => {x = 0; y+= 1},
-                _ => {image.set(x, y, 1); x += 1;},
+                35 => {
+                    image.set(x, y, 1);
+                    x += 1;
+                }
+                46 => {
+                    image.set(x, y, 0);
+                    x += 1;
+                }
+                10 => {
+                    x = 0;
+                    y += 1
+                }
+                _ => {
+                    image.set(x, y, 1);
+                    x += 1;
+                }
             };
         }
 
         let mut total: i64 = 0;
-        for ((x, y), v) in image.sparse_iter() {
+        for ((x, y), _) in image.sparse_iter() {
             // count neighbours
             let p = Point::new(*x as i64, *y as i64);
-            let c = p.cardinal().iter()
-            .map(|n| image.get(n.x().try_into().unwrap(), n.y().try_into().unwrap()).unwrap_or(&0))
-            .sum::<usize>();
+            let c = p
+                .cardinal()
+                .iter()
+                .map(|n| {
+                    image
+                        .get(n.x().try_into().unwrap(), n.y().try_into().unwrap())
+                        .unwrap_or(&0)
+                })
+                .sum::<usize>();
             if c > 3 {
-                info!(intersection = debug(p), c, "intersection");
+                debug!(intersection = debug(p), c, "intersection");
                 total += *x as i64 * *y as i64;
             }
         }
-    // Implement for problem
+        // Implement for problem
         Ok(total)
     }
 
@@ -75,47 +93,157 @@ impl utils::Solution for Solution {
         let mut direction = None;
         for c in output {
             match c as u8 as char {
-                '#' => {image.set(x, y, 1); x += 1;},
-                '.' => {image.set(x, y, 0); x += 1;},
-                '\n' => {x = 0; y+= 1},
-                '^' => { position = Some(Point::new(x as i64, y as i64)); direction = Some(Point::N); image.set(x, y, 1); x += 1; }
-                '>' => { position = Some(Point::new(x as i64, y as i64)); direction = Some(Point::E); image.set(x, y, 1); x += 1; }
-                'v' => { position = Some(Point::new(x as i64, y as i64)); direction = Some(Point::S); image.set(x, y, 1); x += 1; }
-                '<' => { position = Some(Point::new(x as i64, y as i64)); direction = Some(Point::W); image.set(x, y, 1); x += 1; }
+                '#' => {
+                    image.set(x, y, 1);
+                    x += 1;
+                }
+                '.' => {
+                    image.set(x, y, 0);
+                    x += 1;
+                }
+                '\n' => {
+                    x = 0;
+                    y += 1
+                }
+                '^' => {
+                    position = Some(Point::new(x as i64, y as i64));
+                    direction = Some(Point::N);
+                    image.set(x, y, 2);
+                    x += 1;
+                }
+                '>' => {
+                    position = Some(Point::new(x as i64, y as i64));
+                    direction = Some(Point::E);
+                    image.set(x, y, 2);
+                    x += 1;
+                }
+                'v' => {
+                    position = Some(Point::new(x as i64, y as i64));
+                    direction = Some(Point::S);
+                    image.set(x, y, 2);
+                    x += 1;
+                }
+                '<' => {
+                    position = Some(Point::new(x as i64, y as i64));
+                    direction = Some(Point::W);
+                    image.set(x, y, 2);
+                    x += 1;
+                }
                 c => panic!("unexpected char '{c}'"),
             };
         }
 
-        info!(position = debug(position), direction = debug(direction), "start");
+        /*
+        image.display_with_mapping(|v| match v {
+            0 => ".",
+            1 => "#",
+            2 => "X",
+            _ => panic!(),
+        }.to_string());
+        */
 
-        let position = position.unwrap();
+        debug!(
+            position = debug(position),
+            direction = debug(direction),
+            "start"
+        );
+
+        let mut position = position.unwrap();
         let mut direction = direction.unwrap();
 
-        let mut rotations = 0;
-        loop {
-            if let Some(1) = image.get((position.x() + direction.x()) as isize, (position.y() + direction.y()) as isize) {
-                break;
+        let mut commands = String::new();
+        'outer: loop {
+            let mut rotations = 0;
+            loop {
+                if rotations == 4 {
+                    break 'outer;
+                }
+                if rotations != 2 {
+                    if let Some(1) = image.get(
+                        (position.x() + direction.x()) as isize,
+                        (position.y() + direction.y()) as isize,
+                    ) {
+                        break;
+                    }
+                }
+                rotations += 1;
+                direction = Point::new(-direction.y(), direction.x());
             }
-            rotations = 1;
-            direction = Point::new(direction.y(), -direction.x());
-        };
+            let command = match rotations {
+                1 => 'R',
+                3 => 'L',
+                _ => unreachable!(),
+            };
+            commands.push(',');
+            commands.push(command);
 
-        info!(position = debug(position), direction = debug(direction), rotations, "facing");
+            let mut steps = 0;
+            while let Some(1) = image.get(
+                (position.x() + direction.x()) as isize,
+                (position.y() + direction.y()) as isize,
+            ) {
+                position += direction;
+                steps += 1;
+            }
+            commands.push_str(&format!(",{steps}"));
+            debug!(
+                position = debug(position),
+                direction = debug(direction),
+                rotations,
+                steps,
+                "facing"
+            );
+        }
+
+        debug!(commands, "master");
+        // Created manually by inspection
+        let a = "R,8,L,10,L,12,R,4";
+        let b = "R,8,L,12,R,4,R,4";
+        let c = "R,8,L,10,R,8";
+        let commands = commands
+            .replace(a, "A")
+            .replace(b, "B")
+            .replace(c, "C")
+            .chars()
+            .skip(1)
+            .collect::<String>();
+        debug!(commands, "master");
 
         let mut entries = self.entries.clone();
         entries[0] = 2;
         let mut cpu = intcode::Cpu::new(0, &entries);
+
+        for c in commands.chars() {
+            cpu.input(c as i64);
+        }
+        cpu.input(10);
+        for c in a.chars() {
+            cpu.input(c as i64);
+        }
+        cpu.input(10);
+        for c in b.chars() {
+            cpu.input(c as i64);
+        }
+        cpu.input(10);
+        for c in c.chars() {
+            cpu.input(c as i64);
+        }
+        cpu.input(10);
+        cpu.input(110);
+        cpu.input(10);
+
         loop {
-        cpu.execute();
-        if cpu.needs_input() {
-            panic!();
+            cpu.execute();
+            if cpu.needs_input() {
+                panic!();
+            }
+            if cpu.has_halted() {
+                break;
+            }
         }
-        if cpu.has_halted() {
-            break;
-        }
-        }
+        let r = cpu.take_output().pop().unwrap();
         // Implement for problem
-        Ok(0)
+        Ok(r)
     }
 }
 
