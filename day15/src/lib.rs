@@ -52,9 +52,17 @@ impl utils::Solution for Solution {
                 }
             }
             if cpu.needs_input() {
-                if let Some(path) =
-                    self.calculate_path(position, &known, |_, block| *block == Block::None)
-                {
+                if let Some((_, path)) = utils::graph::breadth_first_search(
+                    position,
+                    |p| {
+                        if let Some(Block::Wall) = known.get(p) {
+                            Vec::new()
+                        } else {
+                            p.cardinal()
+                        }
+                    },
+                    |a| matches!(known.get(a).cloned().unwrap_or_default(), Block::None),
+                ) {
                     debug!(
                         path = debug(&path),
                         position = debug(position),
@@ -72,9 +80,18 @@ impl utils::Solution for Solution {
             }
         }
         // Implement for problem
-        let path = self
-            .calculate_path(Point::new(0, 0), &known, |_, block| *block == Block::Oxygen)
-            .unwrap();
+        let (_, path) = utils::graph::breadth_first_search(
+            Point::new(0, 0),
+            |p| {
+                if let Some(Block::Wall) = known.get(p) {
+                    Vec::new()
+                } else {
+                    p.cardinal()
+                }
+            },
+            |a| matches!(known.get(a).cloned().unwrap_or_default(), Block::Oxygen),
+        )
+        .unwrap();
 
         let path = path
             .iter()
@@ -116,9 +133,17 @@ impl utils::Solution for Solution {
                 }
             }
             if cpu.needs_input() {
-                if let Some(path) =
-                    self.calculate_path(position, &known, |_, block| *block == Block::None)
-                {
+                if let Some((_, path)) = utils::graph::breadth_first_search(
+                    position,
+                    |p| {
+                        if let Some(Block::Wall) = known.get(p) {
+                            Vec::new()
+                        } else {
+                            p.cardinal()
+                        }
+                    },
+                    |a| matches!(known.get(a).cloned().unwrap_or_default(), Block::None),
+                ) {
                     debug!(
                         path = debug(&path),
                         position = debug(position),
@@ -179,69 +204,6 @@ impl Solution {
         } else {
             panic!("no direction to travel")
         }
-    }
-
-    fn calculate_path<F>(
-        &self,
-        position: Point,
-        known: &HashMap<Point, Block>,
-        filter: F,
-    ) -> Option<VecDeque<Point>>
-    where
-        F: Fn(Point, &Block) -> bool,
-    {
-        let mut positions = VecDeque::new();
-        positions.push_back(position);
-
-        let mut visited = Vec::new();
-        visited.push(position);
-
-        let mut path_fragments = HashMap::new();
-
-        while let Some(current) = positions.pop_front() {
-            let tile = known.get(&current).cloned().unwrap_or_default();
-            // target - calculate path
-            if filter(current, &tile) {
-                debug!(
-                    current = debug(current),
-                    position = debug(position),
-                    known = debug(known),
-                    tile = debug(tile),
-                    "found"
-                );
-                let path = self.build_path(path_fragments, current);
-                return Some(path);
-            }
-            if tile != Block::Wall {
-                for dir in current.cardinal() {
-                    if visited.contains(&dir) {
-                        continue;
-                    }
-                    visited.push(dir);
-                    positions.push_back(dir);
-                    path_fragments.insert(dir, current);
-                }
-            }
-        }
-        None
-    }
-
-    fn build_path(
-        &self,
-        path_fragments: HashMap<Point, Point>,
-        mut position: Point,
-    ) -> VecDeque<Point> {
-        debug!(
-            path_fragments = debug(&path_fragments),
-            position = debug(position),
-            "build path"
-        );
-        let mut total_path = VecDeque::new();
-        while let Some(&current) = path_fragments.get(&position) {
-            total_path.push_front(position);
-            position = current;
-        }
-        total_path
     }
 }
 impl<T: std::io::Read> TryFrom<BufReader<T>> for Solution {
