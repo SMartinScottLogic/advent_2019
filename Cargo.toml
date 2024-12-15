@@ -25,7 +25,7 @@ members = [
 anyhow = "1.0.66"
 # A dead simple ANSI terminal color painting library.
 yansi = "1.0.0-gamma"
-itertools = "0.12.0"
+itertools = "0.13.0"
 # An implementation of regular expressions for Rust. This implementation uses finite automata …
 regex = "1.7.0"
 # Pathfinding, flow, and graph algorithms
